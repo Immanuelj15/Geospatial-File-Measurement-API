@@ -1,12 +1,15 @@
 from pathlib import Path
+import tempfile
 from typing import List
 
 import geopandas as gpd
 import pandas as pd
 import pyogrio
 
-from app.core.exceptions import FileProcessingError
+from app.core.exceptions import FileProcessingError, FileValidationError
 from app.core.logging import logger
+from app.db.models import FileType
+from app.utils.archive_utils import validate_and_extract_shapefile_archive
 
 
 def read_kml_file(file_path: Path) -> gpd.GeoDataFrame:
@@ -92,7 +95,7 @@ def read_kml_file(file_path: Path) -> gpd.GeoDataFrame:
 
         return combined_gdf
 
-    except FileProcessingError:
+    except (FileProcessingError, FileValidationError):
         raise
     except Exception as exc:
         logger.error(
@@ -102,3 +105,72 @@ def read_kml_file(file_path: Path) -> gpd.GeoDataFrame:
             message=f"Failed to parse KML file '{file_path.name}': {str(exc)}",
             details={"file_name": file_path.name, "error": str(exc)},
         ) from exc
+
+
+def read_shapefile_zip(zip_path: Path) -> gpd.GeoDataFrame:
+    """Safely extract and read a Shapefile ZIP archive into a GeoPandas GeoDataFrame.
+
+    Guarantees sandboxed temporary directory extraction and automated filesystem
+    cleanup upon completion or failure.
+
+    Raises FileProcessingError or FileValidationError if the archive cannot be read
+    or contains 0 features.
+    """
+    if not zip_path.is_file():
+        raise FileProcessingError(
+            message=f"ZIP archive not found on disk: {zip_path.name}",
+            details={"zip_path": str(zip_path)},
+        )
+
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_dir_path = Path(temp_dir)
+
+            # Step 1: Validate and extract shapefile components (Zip Slip defense + .shp/.shx/.dbf check)
+            shp_path = validate_and_extract_shapefile_archive(zip_path, temp_dir_path)
+
+            # Step 2: Read vector data with GeoPandas
+            gdf = gpd.read_file(shp_path)
+
+            if gdf.empty or len(gdf) == 0:
+                raise FileProcessingError(
+                    message="Shapefile contains 0 geospatial features.",
+                    details={"file_name": zip_path.name},
+                )
+
+            # Step 3: Check CRS
+            if gdf.crs is None:
+                logger.warning(
+                    "Shapefile '%s' does not include projection (.prj) metadata.",
+                    zip_path.name,
+                )
+
+            # Return an in-memory copy detached from temp files
+            return gdf.copy()
+
+    except (FileProcessingError, FileValidationError):
+        raise
+    except Exception as exc:
+        logger.error(
+            "Failed to process Shapefile archive '%s': %s",
+            zip_path.name,
+            str(exc),
+            exc_info=True,
+        )
+        raise FileProcessingError(
+            message=f"Failed to process Shapefile archive '{zip_path.name}': {str(exc)}",
+            details={"file_name": zip_path.name, "error": str(exc)},
+        ) from exc
+
+
+def read_geospatial_file(file_path: Path, file_type: FileType) -> gpd.GeoDataFrame:
+    """Unified dispatcher for reading supported geospatial files (KML or Shapefile ZIP)."""
+    if file_type == FileType.KML:
+        return read_kml_file(file_path)
+    if file_type == FileType.SHAPEFILE_ZIP:
+        return read_shapefile_zip(file_path)
+
+    raise FileProcessingError(
+        message=f"Unsupported file type '{file_type}'.",
+        details={"file_type": str(file_type)},
+    )
