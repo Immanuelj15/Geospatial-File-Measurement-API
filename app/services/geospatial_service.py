@@ -1,15 +1,59 @@
+from datetime import date, datetime
+import math
 from pathlib import Path
 import tempfile
-from typing import List
+from typing import Any, Dict, List, Set
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pyogrio
+from shapely.geometry import mapping
 
 from app.core.exceptions import FileProcessingError, FileValidationError
 from app.core.logging import logger
 from app.db.models import FileType
+from app.schemas.feature import ExtractedFeature
 from app.utils.archive_utils import validate_and_extract_shapefile_archive
+
+SUPPORTED_GEOMETRY_TYPES: Set[str] = {
+    "Point",
+    "MultiPoint",
+    "LineString",
+    "MultiLineString",
+    "Polygon",
+    "MultiPolygon",
+}
+
+
+def sanitize_properties(row_dict: Dict[str, Any], geometry_col: str) -> Dict[str, Any]:
+    """Sanitize GeoDataFrame row attributes into JSON-serializable primitives."""
+    clean_props: Dict[str, Any] = {}
+    for key, value in row_dict.items():
+        if key == geometry_col:
+            continue
+
+        # Handle null / NaN
+        if (
+            value is None
+            or (isinstance(value, float) and math.isnan(value))
+            or pd.isna(value)
+        ):
+            clean_props[key] = None
+        elif isinstance(value, (np.integer, int)):
+            clean_props[key] = int(value)
+        elif isinstance(value, (np.floating, float)):
+            clean_props[key] = float(value)
+        elif isinstance(value, (np.bool_, bool)):
+            clean_props[key] = bool(value)
+        elif isinstance(value, (pd.Timestamp, datetime, date)):
+            clean_props[key] = value.isoformat()
+        elif isinstance(value, bytes):
+            clean_props[key] = value.decode("utf-8", errors="replace")
+        else:
+            clean_props[key] = str(value)
+
+    return clean_props
 
 
 def read_kml_file(file_path: Path) -> gpd.GeoDataFrame:
@@ -36,7 +80,6 @@ def read_kml_file(file_path: Path) -> gpd.GeoDataFrame:
                 details={"file_name": file_path.name},
             )
 
-        # raw_layers is typically a 2D numpy array [[layer_name, geom_type], ...]
         layer_names: List[str] = []
         if hasattr(raw_layers[0], "__iter__") and not isinstance(raw_layers[0], str):
             layer_names = [str(item[0]) for item in raw_layers]
@@ -174,3 +217,88 @@ def read_geospatial_file(file_path: Path, file_type: FileType) -> gpd.GeoDataFra
         message=f"Unsupported file type '{file_type}'.",
         details={"file_type": str(file_type)},
     )
+
+
+def extract_features_from_dataframe(gdf: gpd.GeoDataFrame) -> List[ExtractedFeature]:
+    """Iterate over GeoDataFrame rows and extract normalized feature representations.
+
+    Guarantees that individual invalid, corrupt, or unsupported geometries
+    never crash or abort processing for valid features in the same dataset.
+    """
+    geom_col = gdf.geometry.name if hasattr(gdf, "geometry") else "geometry"
+    extracted: List[ExtractedFeature] = []
+
+    for index, row in gdf.iterrows():
+        feature_idx = int(index)
+        row_dict = row.to_dict()
+        properties = sanitize_properties(row_dict, geom_col)
+
+        raw_geom = row.get(geom_col)
+
+        # Check missing or empty geometry
+        if raw_geom is None or (hasattr(raw_geom, "is_empty") and raw_geom.is_empty):
+            extracted.append(
+                ExtractedFeature(
+                    feature_index=feature_idx,
+                    geometry_type="None",
+                    geometry=None,
+                    geometry_geojson=None,
+                    properties=properties,
+                    is_supported_geometry=False,
+                    is_valid_geometry=False,
+                    error_message="Feature contains missing or empty geometry.",
+                )
+            )
+            continue
+
+        geom_type = str(raw_geom.geom_type)
+
+        # Check supported geometry type
+        if geom_type not in SUPPORTED_GEOMETRY_TYPES:
+            geojson_repr = None
+            try:
+                geojson_repr = mapping(raw_geom)
+            except Exception:
+                pass
+
+            extracted.append(
+                ExtractedFeature(
+                    feature_index=feature_idx,
+                    geometry_type=geom_type,
+                    geometry=raw_geom,
+                    geometry_geojson=geojson_repr,
+                    properties=properties,
+                    is_supported_geometry=False,
+                    is_valid_geometry=bool(raw_geom.is_valid),
+                    error_message=f"Unsupported geometry type '{geom_type}'.",
+                )
+            )
+            continue
+
+        # Check topological validity (e.g., bowtie / self-intersecting polygon)
+        is_valid = bool(raw_geom.is_valid)
+        error_msg = None
+        if not is_valid:
+            error_msg = f"Invalid {geom_type} geometry (topological violation)."
+
+        try:
+            geom_geojson = mapping(raw_geom)
+        except Exception as map_err:
+            geom_geojson = None
+            is_valid = False
+            error_msg = f"Failed to serialize geometry to GeoJSON: {str(map_err)}"
+
+        extracted.append(
+            ExtractedFeature(
+                feature_index=feature_idx,
+                geometry_type=geom_type,
+                geometry=raw_geom,
+                geometry_geojson=geom_geojson,
+                properties=properties,
+                is_supported_geometry=True,
+                is_valid_geometry=is_valid,
+                error_message=error_msg,
+            )
+        )
+
+    return extracted
