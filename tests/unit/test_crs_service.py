@@ -32,6 +32,21 @@ def test_calculate_utm_epsg_quadrants() -> None:
     assert calculate_utm_epsg(10.0, -82.0) == 32761
 
 
+def test_calculate_utm_epsg_boundaries_and_dateline() -> None:
+    """Verify international date line wrap-around and equator boundary conditions."""
+    # Near International Date Line East (179.9° E) -> Zone 60N
+    assert calculate_utm_epsg(179.9, 20.0) == 32660
+
+    # Near International Date Line West (-179.9° W) -> Zone 1N
+    assert calculate_utm_epsg(-179.9, 20.0) == 32601
+
+    # Equator boundary (latitude 0.0°) -> defaults to Northern Hemisphere UTM
+    assert calculate_utm_epsg(77.59, 0.0) == 32643
+
+    # Longitude normalization test (> 180° or < -180°)
+    assert calculate_utm_epsg(185.0, 10.0) == calculate_utm_epsg(-175.0, 10.0)
+
+
 def test_parse_crs() -> None:
     """Verify parsing various CRS formats."""
     assert parse_crs("EPSG:4326") == CRS.from_epsg(4326)
@@ -66,7 +81,6 @@ def test_determine_optimal_projected_crs_geographic() -> None:
 
 def test_transform_geometry_preserves_shape() -> None:
     """Verify geometry reprojection converts angular degrees into metric planar meters."""
-    # Polygon in Bangalore (EPSG:4326 degrees)
     poly_degrees = Polygon(
         [
             (77.590, 12.970),
@@ -82,7 +96,6 @@ def test_transform_geometry_preserves_shape() -> None:
     poly_meters = transform_geometry(poly_degrees, source_crs, target_crs)
 
     assert poly_meters.is_valid
-    # In UTM zone 43N, X is around 780,000 m, Y is around 1,430,000 m
     minx, miny, maxx, maxy = poly_meters.bounds
     assert minx > 100000.0
     assert miny > 100000.0
@@ -106,7 +119,6 @@ def test_reproject_dataframe_for_measurement() -> None:
     assert "4326" in detected_str
     assert "32643" in measurement_str
     assert proj_gdf.crs.to_epsg() == 32643
-    # Coordinates are now in meters
     assert proj_gdf.geometry.iloc[0].bounds[0] > 100000.0
 
 

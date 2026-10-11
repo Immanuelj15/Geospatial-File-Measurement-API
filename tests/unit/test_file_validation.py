@@ -17,6 +17,9 @@ def test_validate_file_extension_valid() -> None:
     assert validate_file_extension("SURVEY.KML") == ".kml"
     assert validate_file_extension("parcels.zip") == ".zip"
     assert validate_file_extension("PARCELS.ZIP") == ".zip"
+    # Multiple dots in filename
+    assert validate_file_extension("flight_2026.04.10.kml") == ".kml"
+    assert validate_file_extension("drone.survey.final.zip") == ".zip"
 
 
 def test_validate_file_extension_invalid() -> None:
@@ -42,6 +45,9 @@ def test_validate_file_size() -> None:
     # Negative bytes -> error
     with pytest.raises(FileValidationError):
         validate_file_size(-10)
+
+    # Valid boundary: exactly 1 byte -> pass
+    validate_file_size(1)
 
     # Valid size (e.g. 1 MB) -> pass
     validate_file_size(1024 * 1024)

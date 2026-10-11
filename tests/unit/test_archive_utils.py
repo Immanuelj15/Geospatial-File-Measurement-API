@@ -1,5 +1,5 @@
-import zipfile
 from pathlib import Path
+import zipfile
 import pytest
 
 from app.core.exceptions import FileValidationError
@@ -34,7 +34,6 @@ def test_safe_extract_zip_slip_rejected(tmp_path: Path) -> None:
     extract_dir.mkdir()
 
     with zipfile.ZipFile(zip_path, "w") as zf:
-        # Write member with relative path traversal
         zf.writestr("../evil.txt", "malicious payload")
 
     with pytest.raises(FileValidationError) as exc_info:
@@ -69,12 +68,38 @@ def test_inspect_shapefile_components_valid(tmp_path: Path) -> None:
     assert shp_path.exists()
 
 
+def test_inspect_shapefile_nested_directory(tmp_path: Path) -> None:
+    """Verify Shapefile located inside a nested subdirectory is discovered recursively."""
+    nested_dir = tmp_path / "root_folder" / "sub_survey"
+    nested_dir.mkdir(parents=True)
+
+    (nested_dir / "parcels.shp").touch()
+    (nested_dir / "parcels.shx").touch()
+    (nested_dir / "parcels.dbf").touch()
+
+    shp_path = inspect_shapefile_components(tmp_path / "root_folder")
+    assert shp_path.name == "parcels.shp"
+    assert shp_path.parent == nested_dir
+
+
+def test_inspect_shapefile_mixed_case_extensions(tmp_path: Path) -> None:
+    """Verify Shapefile with uppercase/mixed-case extensions (.SHP, .Shx, .DBF) is valid."""
+    shp_dir = tmp_path / "mixed_case"
+    shp_dir.mkdir()
+
+    (shp_dir / "drone_zone.SHP").touch()
+    (shp_dir / "drone_zone.Shx").touch()
+    (shp_dir / "drone_zone.DBF").touch()
+
+    shp_path = inspect_shapefile_components(shp_dir)
+    assert shp_path.name == "drone_zone.SHP"
+
+
 def test_inspect_shapefile_missing_components(tmp_path: Path) -> None:
     """Verify missing .shx or .dbf raises FileValidationError."""
     shp_dir = tmp_path / "incomplete_data"
     shp_dir.mkdir()
 
-    # Missing .shx and .dbf
     (shp_dir / "boundaries.shp").touch()
 
     with pytest.raises(FileValidationError) as exc_info:
