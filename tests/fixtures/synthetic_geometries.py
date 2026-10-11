@@ -132,6 +132,54 @@ def create_empty_kml(file_path: Path) -> Path:
     return file_path
 
 
+def create_synthetic_mixed_kml(file_path: Path) -> Path:
+    """Generate a KML file containing Point, Polygon, and an unsupported GeometryCollection (MultiGeometry)."""
+    content = """<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Mixed Dataset</name>
+    <Placemark>
+      <name>Survey Marker</name>
+      <Point>
+        <coordinates>77.5946,12.9716,0</coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Field Parcel</name>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              77.5900,12.9700,0
+              77.5950,12.9700,0
+              77.5950,12.9750,0
+              77.5900,12.9750,0
+              77.5900,12.9700,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+    <Placemark>
+      <name>Compound MultiGeometry</name>
+      <MultiGeometry>
+        <Point>
+          <coordinates>77.5920,12.9720,0</coordinates>
+        </Point>
+        <LineString>
+          <coordinates>
+            77.5920,12.9720,0
+            77.5930,12.9730,0
+          </coordinates>
+        </LineString>
+      </MultiGeometry>
+    </Placemark>
+  </Document>
+</kml>"""
+    file_path.write_text(content, encoding="utf-8")
+    return file_path
+
+
 def create_synthetic_shapefile_zip(
     zip_path: Path,
     geometry_type: str = "Polygon",
