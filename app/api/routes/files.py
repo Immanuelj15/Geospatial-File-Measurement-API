@@ -1,6 +1,7 @@
+from typing import Optional
 import uuid
 
-from fastapi import APIRouter, Depends, File, status, UploadFile
+from fastapi import APIRouter, Depends, File, Query, status, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
@@ -9,6 +10,7 @@ from app.core.logging import logger
 from app.db.database import get_db
 from app.repositories.file_repository import FileRepository
 from app.schemas.file import FileDetailResponse
+from app.schemas.measurement import PaginatedMeasurementsResponse
 from app.services.file_service import FileProcessingService
 from app.utils.file_validation import (
     determine_file_type,
@@ -101,3 +103,50 @@ def get_file_metadata(
         )
 
     return FileDetailResponse.model_validate(file_record)
+
+
+@router.get(
+    "/{id}/measurements/",
+    response_model=PaginatedMeasurementsResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Retrieve paginated feature measurements",
+    description="Fetch individual vector feature measurements (area for Polygons, length for LineStrings, null for Points) for a processed geospatial file.",
+)
+def get_file_measurements(
+    id: uuid.UUID,
+    offset: int = Query(default=0, ge=0, description="Number of items to skip"),
+    limit: int = Query(
+        default=100, ge=1, le=500, description="Max items to return (1-500)"
+    ),
+    status_filter: Optional[str] = Query(
+        default=None,
+        alias="status",
+        description="Filter by feature status (SUCCESS, FAILED, UNSUPPORTED)",
+    ),
+    db: Session = Depends(get_db),
+) -> PaginatedMeasurementsResponse:
+    """Retrieve paginated feature measurements for a given file ID."""
+    repository = FileRepository(db)
+    file_record = repository.get_file_by_id(id)
+
+    if not file_record:
+        raise EntityNotFoundError(
+            message=f"Geospatial file with ID '{id}' was not found.",
+            details={"file_id": str(id)},
+        )
+
+    total = repository.count_features_by_file_id(id, status_filter=status_filter)
+    features = repository.get_features_by_file_id(
+        file_id=id,
+        offset=offset,
+        limit=limit,
+        status_filter=status_filter,
+    )
+
+    return PaginatedMeasurementsResponse(
+        file_id=id,
+        total=total,
+        offset=offset,
+        limit=limit,
+        items=features,
+    )
