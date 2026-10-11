@@ -133,13 +133,9 @@ def test_reproject_dataframe_missing_crs_fallback() -> None:
             (77.590, 12.970),
         ]
     )
-    gdf_unprojected = gpd.GeoDataFrame(
-        {"name": ["No CRS Site"]}, geometry=[poly], crs=None
-    )
+    gdf_unprojected = gpd.GeoDataFrame({"name": ["No CRS Site"]}, geometry=[poly], crs=None)
 
-    proj_gdf, detected_str, measurement_str = reproject_dataframe_for_measurement(
-        gdf_unprojected
-    )
+    proj_gdf, detected_str, measurement_str = reproject_dataframe_for_measurement(gdf_unprojected)
 
     assert "UNSPECIFIED" in detected_str
     assert "32643" in measurement_str

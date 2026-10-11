@@ -1,6 +1,5 @@
-from datetime import datetime
-from typing import Optional
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -13,12 +12,12 @@ class FileDetailResponse(BaseModel):
     file_type: str
     file_size_bytes: int
     status: str
-    crs: Optional[str] = None
+    crs: str | None = None
     feature_count: int = Field(validation_alias="total_features")
     successful_measurements: int
     failed_measurements: int
     unsupported_features: int
-    error_message: Optional[str] = None
+    error_message: str | None = None
     created_at: datetime
     updated_at: datetime
 

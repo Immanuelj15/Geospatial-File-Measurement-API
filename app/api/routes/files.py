@@ -1,7 +1,6 @@
-from typing import Optional
 import uuid
 
-from fastapi import APIRouter, Depends, File, Query, status, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
@@ -115,10 +114,8 @@ def get_file_metadata(
 def get_file_measurements(
     id: uuid.UUID,
     offset: int = Query(default=0, ge=0, description="Number of items to skip"),
-    limit: int = Query(
-        default=100, ge=1, le=500, description="Max items to return (1-500)"
-    ),
-    status_filter: Optional[str] = Query(
+    limit: int = Query(default=100, ge=1, le=500, description="Max items to return (1-500)"),
+    status_filter: str | None = Query(
         default=None,
         alias="status",
         description="Filter by feature status (SUCCESS, FAILED, UNSUPPORTED)",

@@ -1,5 +1,6 @@
-from pathlib import Path
 import uuid
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from tests.fixtures.synthetic_geometries import create_synthetic_kml
@@ -8,9 +9,7 @@ from tests.fixtures.synthetic_geometries import create_synthetic_kml
 def test_api_get_measurements_success(client: TestClient, tmp_path: Path) -> None:
     """Verify GET /api/files/{id}/measurements/ returns correct measurements and status."""
     kml_file = tmp_path / "survey_measurements.kml"
-    create_synthetic_kml(
-        kml_file, include_point=True, include_line=True, include_polygon=True
-    )
+    create_synthetic_kml(kml_file, include_point=True, include_line=True, include_polygon=True)
 
     with open(kml_file, "rb") as f:
         post_resp = client.post(
@@ -69,16 +68,12 @@ def test_api_get_measurements_success(client: TestClient, tmp_path: Path) -> Non
 def test_api_get_measurements_pagination(client: TestClient, tmp_path: Path) -> None:
     """Verify pagination limit and offset parameters."""
     kml_file = tmp_path / "page_test.kml"
-    create_synthetic_kml(
-        kml_file, include_point=True, include_line=True, include_polygon=True
-    )
+    create_synthetic_kml(kml_file, include_point=True, include_line=True, include_polygon=True)
 
     with open(kml_file, "rb") as f:
         post_resp = client.post(
             "/api/files/",
-            files={
-                "file": ("page_test.kml", f, "application/vnd.google-earth.kml+xml")
-            },
+            files={"file": ("page_test.kml", f, "application/vnd.google-earth.kml+xml")},
         )
     file_id = post_resp.json()["id"]
 
@@ -108,9 +103,7 @@ def test_api_get_measurements_file_not_found(client: TestClient) -> None:
     assert data["error"] == "EntityNotFoundError"
 
 
-def test_api_get_measurements_invalid_pagination(
-    client: TestClient, tmp_path: Path
-) -> None:
+def test_api_get_measurements_invalid_pagination(client: TestClient, tmp_path: Path) -> None:
     """Verify 422 validation error on negative offset or excessive limit."""
     random_id = uuid.uuid4()
 

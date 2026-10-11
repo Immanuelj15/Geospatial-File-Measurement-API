@@ -1,6 +1,5 @@
 from functools import lru_cache
 from pathlib import Path
-from typing import Set
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,7 +27,7 @@ class Settings(BaseSettings):
     # Storage & Upload configuration
     UPLOAD_DIR: Path = Field(default=Path("uploads"))
     MAX_UPLOAD_SIZE_BYTES: int = Field(default=25 * 1024 * 1024)  # 25 MB
-    ALLOWED_EXTENSIONS: Set[str] = Field(default={".kml", ".zip"})
+    ALLOWED_EXTENSIONS: set[str] = Field(default={".kml", ".zip"})
 
     # Logging
     LOG_LEVEL: str = Field(default="INFO")

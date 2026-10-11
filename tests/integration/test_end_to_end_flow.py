@@ -1,6 +1,7 @@
 import io
-from pathlib import Path
 import zipfile
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from tests.fixtures.synthetic_geometries import (
@@ -69,18 +70,14 @@ def test_end_to_end_kml_workflow(client: TestClient, tmp_path: Path) -> None:
     assert len(meas_data["items"]) == 3
 
     # Check Polygon calculation
-    polygon_item = next(
-        i for i in meas_data["items"] if i["geometry_type"] == "Polygon"
-    )
+    polygon_item = next(i for i in meas_data["items"] if i["geometry_type"] == "Polygon")
     assert polygon_item["measurement_type"] == "area"
     assert polygon_item["unit"] == "m2"
     assert polygon_item["measurement_value"] > 0
     assert polygon_item["status"] == "SUCCESS"
 
     # Check LineString calculation
-    line_item = next(
-        i for i in meas_data["items"] if i["geometry_type"] == "LineString"
-    )
+    line_item = next(i for i in meas_data["items"] if i["geometry_type"] == "LineString")
     assert line_item["measurement_type"] == "length"
     assert line_item["unit"] == "m"
     assert line_item["measurement_value"] > 0
@@ -94,15 +91,11 @@ def test_end_to_end_kml_workflow(client: TestClient, tmp_path: Path) -> None:
     assert point_item["status"] == "SUCCESS"
 
     # 4. Filter measurements by status
-    success_filter_resp = client.get(
-        f"/api/files/{file_id}/measurements/?status=SUCCESS"
-    )
+    success_filter_resp = client.get(f"/api/files/{file_id}/measurements/?status=SUCCESS")
     assert success_filter_resp.status_code == 200
     assert success_filter_resp.json()["total"] == 3
 
-    failed_filter_resp = client.get(
-        f"/api/files/{file_id}/measurements/?status=FAILED"
-    )
+    failed_filter_resp = client.get(f"/api/files/{file_id}/measurements/?status=FAILED")
     assert failed_filter_resp.status_code == 200
     assert failed_filter_resp.json()["total"] == 0
     assert len(failed_filter_resp.json()["items"]) == 0
@@ -150,9 +143,7 @@ def test_end_to_end_shapefile_workflow(client: TestClient, tmp_path: Path) -> No
         assert item["status"] == "SUCCESS"
 
 
-def test_end_to_end_partial_dataset_workflow(
-    client: TestClient, tmp_path: Path
-) -> None:
+def test_end_to_end_partial_dataset_workflow(client: TestClient, tmp_path: Path) -> None:
     """Verify end-to-end ingestion of a dataset with unsupported geometries (PARTIAL status)."""
     kml_file = tmp_path / "mixed_partial.kml"
     create_synthetic_mixed_kml(kml_file)
@@ -178,9 +169,7 @@ def test_end_to_end_partial_dataset_workflow(
     assert upload_data["unsupported_features"] == 1
 
     # Verify filtering for UNSUPPORTED items
-    unsupported_resp = client.get(
-        f"/api/files/{file_id}/measurements/?status=UNSUPPORTED"
-    )
+    unsupported_resp = client.get(f"/api/files/{file_id}/measurements/?status=UNSUPPORTED")
     assert unsupported_resp.status_code == 200
     unsupported_data = unsupported_resp.json()
     assert unsupported_data["total"] == 1
@@ -192,9 +181,7 @@ def test_end_to_end_partial_dataset_workflow(
     assert unsupported_item["error"] is not None
 
 
-def test_end_to_end_failed_pipeline_corrupted_kml(
-    client: TestClient, tmp_path: Path
-) -> None:
+def test_end_to_end_failed_pipeline_corrupted_kml(client: TestClient, tmp_path: Path) -> None:
     """Verify corrupted KML payload registers as FAILED and maintains DB traceability."""
     corrupted_content = b"<kml><Document><Placemark><name>Broken</kml>"
     upload_resp = client.post(

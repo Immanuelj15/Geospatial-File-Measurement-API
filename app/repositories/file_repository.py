@@ -1,4 +1,3 @@
-from typing import List, Optional
 import uuid
 
 from sqlalchemy import func, select
@@ -19,7 +18,7 @@ class FileRepository:
         stored_filename: str,
         file_type: str,
         file_size_bytes: int,
-        file_id: Optional[uuid.UUID] = None,
+        file_id: uuid.UUID | None = None,
     ) -> FileModel:
         """Create and persist an initial FileModel record in UPLOADED status."""
         file_record = FileModel(
@@ -35,7 +34,7 @@ class FileRepository:
         self.db.refresh(file_record)
         return file_record
 
-    def get_file_by_id(self, file_id: uuid.UUID) -> Optional[FileModel]:
+    def get_file_by_id(self, file_id: uuid.UUID) -> FileModel | None:
         """Retrieve a FileModel by UUID primary key."""
         stmt = select(FileModel).where(FileModel.id == file_id)
         return self.db.execute(stmt).scalar_one_or_none()
@@ -44,13 +43,13 @@ class FileRepository:
         self,
         file_id: uuid.UUID,
         status: FileStatus,
-        error_message: Optional[str] = None,
-        crs: Optional[str] = None,
-        total_features: Optional[int] = None,
-        successful_measurements: Optional[int] = None,
-        failed_measurements: Optional[int] = None,
-        unsupported_features: Optional[int] = None,
-    ) -> Optional[FileModel]:
+        error_message: str | None = None,
+        crs: str | None = None,
+        total_features: int | None = None,
+        successful_measurements: int | None = None,
+        failed_measurements: int | None = None,
+        unsupported_features: int | None = None,
+    ) -> FileModel | None:
         """Update file processing status and metric counters."""
         file_record = self.get_file_by_id(file_id)
         if not file_record:
@@ -74,7 +73,7 @@ class FileRepository:
         self.db.refresh(file_record)
         return file_record
 
-    def bulk_create_features(self, features: List[FeatureModel]) -> None:
+    def bulk_create_features(self, features: list[FeatureModel]) -> None:
         """Persist a list of FeatureModel records efficiently."""
         if not features:
             return
@@ -86,8 +85,8 @@ class FileRepository:
         file_id: uuid.UUID,
         offset: int = 0,
         limit: int = 100,
-        status_filter: Optional[str] = None,
-    ) -> List[FeatureModel]:
+        status_filter: str | None = None,
+    ) -> list[FeatureModel]:
         """Retrieve paginated feature records for a given file."""
         stmt = (
             select(FeatureModel)
@@ -103,12 +102,10 @@ class FileRepository:
     def count_features_by_file_id(
         self,
         file_id: uuid.UUID,
-        status_filter: Optional[str] = None,
+        status_filter: str | None = None,
     ) -> int:
         """Count total feature records for a file, with optional status filtering."""
-        stmt = select(func.count(FeatureModel.id)).where(
-            FeatureModel.file_id == file_id
-        )
+        stmt = select(func.count(FeatureModel.id)).where(FeatureModel.file_id == file_id)
         if status_filter:
             stmt = stmt.where(FeatureModel.status == status_filter)
         return int(self.db.execute(stmt).scalar() or 0)

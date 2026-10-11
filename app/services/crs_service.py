@@ -1,5 +1,5 @@
 import math
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import geopandas as gpd
 from pyproj import CRS, Transformer
@@ -16,7 +16,7 @@ UPS_NORTH_EPSG = 32661
 UPS_SOUTH_EPSG = 32761
 
 
-def parse_crs(crs_input: Any) -> Optional[CRS]:
+def parse_crs(crs_input: Any) -> CRS | None:
     """Parse various CRS representations into a pyproj.CRS instance.
 
     Returns None if input is None or cannot be parsed.
@@ -63,10 +63,10 @@ def calculate_utm_epsg(lon: float, lat: float) -> int:
 
 
 def determine_optimal_projected_crs(
-    source_crs: Optional[CRS],
+    source_crs: CRS | None,
     centroid_lon: float,
     centroid_lat: float,
-) -> Tuple[CRS, bool]:
+) -> tuple[CRS, bool]:
     """Determine the target projected CRS for metric measurements.
 
     Returns:
@@ -130,16 +130,14 @@ def transform_geometry(
 
 def reproject_dataframe_for_measurement(
     gdf: gpd.GeoDataFrame,
-) -> Tuple[gpd.GeoDataFrame, str, str]:
+) -> tuple[gpd.GeoDataFrame, str, str]:
     """Inspect GeoDataFrame CRS, determine optimal projected CRS, and reproject for measurement.
 
     Returns:
         (projected_gdf, detected_crs_display, measurement_crs_display)
     """
     source_crs = parse_crs(gdf.crs)
-    detected_crs_str = (
-        source_crs.to_string() if source_crs else "UNSPECIFIED (Assumed EPSG:4326)"
-    )
+    detected_crs_str = source_crs.to_string() if source_crs else "UNSPECIFIED (Assumed EPSG:4326)"
 
     # Fallback to EPSG:4326 if source CRS was completely unassigned
     working_source_crs = source_crs if source_crs is not None else CRS.from_epsg(4326)
@@ -152,9 +150,7 @@ def reproject_dataframe_for_measurement(
         center_lat = (bounds[1] + bounds[3]) / 2.0
     else:
         # Already projected: transform centroid to WGS84 just to get lon/lat if needed, or preserve
-        to_wgs84 = Transformer.from_crs(
-            working_source_crs, CRS.from_epsg(4326), always_xy=True
-        )
+        to_wgs84 = Transformer.from_crs(working_source_crs, CRS.from_epsg(4326), always_xy=True)
         bounds = gdf.total_bounds
         mid_x = (bounds[0] + bounds[2]) / 2.0
         mid_y = (bounds[1] + bounds[3]) / 2.0

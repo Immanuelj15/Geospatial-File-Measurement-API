@@ -1,6 +1,7 @@
 import io
-from pathlib import Path
 import uuid
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from tests.fixtures.synthetic_geometries import (
@@ -12,9 +13,7 @@ from tests.fixtures.synthetic_geometries import (
 def test_api_upload_kml_success(client: TestClient, tmp_path: Path) -> None:
     """Verify POST /api/files/ uploads, processes, and returns 201 Created for KML."""
     kml_file = tmp_path / "survey.kml"
-    create_synthetic_kml(
-        kml_file, include_point=True, include_line=True, include_polygon=True
-    )
+    create_synthetic_kml(kml_file, include_point=True, include_line=True, include_polygon=True)
 
     with open(kml_file, "rb") as f:
         response = client.post(
@@ -56,9 +55,7 @@ def test_api_upload_shapefile_zip_success(client: TestClient, tmp_path: Path) ->
 def test_api_get_file_metadata_success(client: TestClient, tmp_path: Path) -> None:
     """Verify GET /api/files/{id}/ returns 200 OK and accurate metadata."""
     kml_file = tmp_path / "test.kml"
-    create_synthetic_kml(
-        kml_file, include_point=True, include_line=False, include_polygon=False
-    )
+    create_synthetic_kml(kml_file, include_point=True, include_line=False, include_polygon=False)
 
     with open(kml_file, "rb") as f:
         post_resp = client.post(
@@ -107,9 +104,7 @@ def test_api_upload_empty_file(client: TestClient) -> None:
     empty_payload = io.BytesIO(b"")
     response = client.post(
         "/api/files/",
-        files={
-            "file": ("empty.kml", empty_payload, "application/vnd.google-earth.kml+xml")
-        },
+        files={"file": ("empty.kml", empty_payload, "application/vnd.google-earth.kml+xml")},
     )
 
     assert response.status_code == 400

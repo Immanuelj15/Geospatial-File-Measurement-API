@@ -1,7 +1,8 @@
 import datetime
+
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import geopandas as gpd
 from shapely.geometry import GeometryCollection, LineString, Point, Polygon
 
 from app.services.geospatial_service import (

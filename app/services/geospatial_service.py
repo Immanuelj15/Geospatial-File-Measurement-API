@@ -1,8 +1,8 @@
-from datetime import date, datetime
 import math
-from pathlib import Path
 import tempfile
-from typing import Any, Dict, List, Set
+from datetime import date, datetime
+from pathlib import Path
+from typing import Any
 
 import geopandas as gpd
 import numpy as np
@@ -16,7 +16,7 @@ from app.db.models import FileType
 from app.schemas.feature import ExtractedFeature
 from app.utils.archive_utils import validate_and_extract_shapefile_archive
 
-SUPPORTED_GEOMETRY_TYPES: Set[str] = {
+SUPPORTED_GEOMETRY_TYPES: set[str] = {
     "Point",
     "MultiPoint",
     "LineString",
@@ -26,19 +26,15 @@ SUPPORTED_GEOMETRY_TYPES: Set[str] = {
 }
 
 
-def sanitize_properties(row_dict: Dict[str, Any], geometry_col: str) -> Dict[str, Any]:
+def sanitize_properties(row_dict: dict[str, Any], geometry_col: str) -> dict[str, Any]:
     """Sanitize GeoDataFrame row attributes into JSON-serializable primitives."""
-    clean_props: Dict[str, Any] = {}
+    clean_props: dict[str, Any] = {}
     for key, value in row_dict.items():
         if key == geometry_col:
             continue
 
         # Handle null / NaN
-        if (
-            value is None
-            or (isinstance(value, float) and math.isnan(value))
-            or pd.isna(value)
-        ):
+        if value is None or (isinstance(value, float) and math.isnan(value)) or pd.isna(value):
             clean_props[key] = None
         elif isinstance(value, (np.integer, int)):
             clean_props[key] = int(value)
@@ -80,13 +76,13 @@ def read_kml_file(file_path: Path) -> gpd.GeoDataFrame:
                 details={"file_name": file_path.name},
             )
 
-        layer_names: List[str] = []
+        layer_names: list[str] = []
         if hasattr(raw_layers[0], "__iter__") and not isinstance(raw_layers[0], str):
             layer_names = [str(item[0]) for item in raw_layers]
         else:
             layer_names = [str(item) for item in raw_layers]
 
-        gdfs: List[gpd.GeoDataFrame] = []
+        gdfs: list[gpd.GeoDataFrame] = []
 
         if layer_names:
             for layer in layer_names:
@@ -95,9 +91,7 @@ def read_kml_file(file_path: Path) -> gpd.GeoDataFrame:
                     if not df.empty:
                         gdfs.append(df)
                 except Exception as layer_exc:
-                    logger.warning(
-                        "Could not read KML layer '%s': %s", layer, str(layer_exc)
-                    )
+                    logger.warning("Could not read KML layer '%s': %s", layer, str(layer_exc))
 
         # Fallback to direct read if no layers were extracted
         if not gdfs:
@@ -141,9 +135,7 @@ def read_kml_file(file_path: Path) -> gpd.GeoDataFrame:
     except (FileProcessingError, FileValidationError):
         raise
     except Exception as exc:
-        logger.error(
-            "Failed to parse KML file '%s': %s", file_path.name, str(exc), exc_info=True
-        )
+        logger.error("Failed to parse KML file '%s': %s", file_path.name, str(exc), exc_info=True)
         raise FileProcessingError(
             message=f"Failed to parse KML file '{file_path.name}': {str(exc)}",
             details={"file_name": file_path.name, "error": str(exc)},
@@ -219,14 +211,14 @@ def read_geospatial_file(file_path: Path, file_type: FileType) -> gpd.GeoDataFra
     )
 
 
-def extract_features_from_dataframe(gdf: gpd.GeoDataFrame) -> List[ExtractedFeature]:
+def extract_features_from_dataframe(gdf: gpd.GeoDataFrame) -> list[ExtractedFeature]:
     """Iterate over GeoDataFrame rows and extract normalized feature representations.
 
     Guarantees that individual invalid, corrupt, or unsupported geometries
     never crash or abort processing for valid features in the same dataset.
     """
     geom_col = gdf.geometry.name if hasattr(gdf, "geometry") else "geometry"
-    extracted: List[ExtractedFeature] = []
+    extracted: list[ExtractedFeature] = []
 
     for index, row in gdf.iterrows():
         feature_idx = int(index)

@@ -1,5 +1,5 @@
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -100,9 +100,7 @@ def create_app() -> FastAPI:
     async def file_validation_exception_handler(
         request: Request, exc: FileValidationError
     ) -> JSONResponse:
-        logger.warning(
-            "File validation error: %s (details: %s)", exc.message, exc.details
-        )
+        logger.warning("File validation error: %s (details: %s)", exc.message, exc.details)
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
@@ -127,9 +125,7 @@ def create_app() -> FastAPI:
         )
 
     @app.exception_handler(AppBaseException)
-    async def app_base_exception_handler(
-        request: Request, exc: AppBaseException
-    ) -> JSONResponse:
+    async def app_base_exception_handler(request: Request, exc: AppBaseException) -> JSONResponse:
         logger.error("Application domain error: %s", exc.message, exc_info=True)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -141,9 +137,7 @@ def create_app() -> FastAPI:
         )
 
     @app.exception_handler(Exception)
-    async def unhandled_exception_handler(
-        request: Request, exc: Exception
-    ) -> JSONResponse:
+    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         logger.error("Unhandled server exception: %s", str(exc), exc_info=True)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

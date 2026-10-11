@@ -1,4 +1,3 @@
-from typing import List, Optional
 from shapely.geometry.base import BaseGeometry
 
 from app.core.logging import logger
@@ -13,7 +12,7 @@ POINT_GEOMETRIES = {"Point", "MultiPoint"}
 
 def measure_feature(
     feature: ExtractedFeature,
-    projected_geometry: Optional[BaseGeometry],
+    projected_geometry: BaseGeometry | None,
 ) -> FeatureMeasurementResult:
     """Compute metric measurement (area or length) for an individual vector feature.
 
@@ -140,12 +139,12 @@ def measure_feature(
 
 
 def measure_dataset(
-    extracted_features: List[ExtractedFeature],
-    projected_geometries: List[Optional[BaseGeometry]],
-) -> List[FeatureMeasurementResult]:
+    extracted_features: list[ExtractedFeature],
+    projected_geometries: list[BaseGeometry | None],
+) -> list[FeatureMeasurementResult]:
     """Perform batch measurements matching extracted features to projected geometries."""
-    results: List[FeatureMeasurementResult] = []
-    for feature, proj_geom in zip(extracted_features, projected_geometries):
+    results: list[FeatureMeasurementResult] = []
+    for feature, proj_geom in zip(extracted_features, projected_geometries, strict=False):
         res = measure_feature(feature, proj_geom)
         results.append(res)
     return results

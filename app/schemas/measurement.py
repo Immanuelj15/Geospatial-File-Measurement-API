@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
 import uuid
+from dataclasses import dataclass, field
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -11,13 +11,13 @@ class FeatureMeasurementResult:
 
     feature_index: int
     geometry_type: str
-    geometry_geojson: Optional[Dict[str, Any]]
-    properties: Dict[str, Any] = field(default_factory=dict)
-    measurement_type: Optional[str] = None
-    measurement_value: Optional[float] = None
-    unit: Optional[str] = None
+    geometry_geojson: dict[str, Any] | None
+    properties: dict[str, Any] = field(default_factory=dict)
+    measurement_type: str | None = None
+    measurement_value: float | None = None
+    unit: str | None = None
     status: str = "SUCCESS"
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class FeatureMeasurementResponse(BaseModel):
@@ -26,15 +26,13 @@ class FeatureMeasurementResponse(BaseModel):
     id: uuid.UUID
     feature_id: int = Field(validation_alias="feature_index")
     geometry_type: str
-    measurement_type: Optional[str] = None
-    measurement_value: Optional[float] = None
-    unit: Optional[str] = Field(default=None, validation_alias="measurement_unit")
+    measurement_type: str | None = None
+    measurement_value: float | None = None
+    unit: str | None = Field(default=None, validation_alias="measurement_unit")
     status: str
-    error: Optional[str] = Field(default=None, validation_alias="error_message")
-    properties: Optional[Dict[str, Any]] = None
-    geometry: Optional[Dict[str, Any]] = Field(
-        default=None, validation_alias="geometry_geojson"
-    )
+    error: str | None = Field(default=None, validation_alias="error_message")
+    properties: dict[str, Any] | None = None
+    geometry: dict[str, Any] | None = Field(default=None, validation_alias="geometry_geojson")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -49,7 +47,7 @@ class PaginatedMeasurementsResponse(BaseModel):
     total: int
     offset: int
     limit: int
-    items: List[FeatureMeasurementResponse]
+    items: list[FeatureMeasurementResponse]
 
     model_config = ConfigDict(
         from_attributes=True,

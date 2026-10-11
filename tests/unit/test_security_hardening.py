@@ -1,9 +1,10 @@
-from pathlib import Path
 import tempfile
 import uuid
 import zipfile
-from fastapi.testclient import TestClient
+from pathlib import Path
+
 import pytest
+from fastapi.testclient import TestClient
 
 from app.core.config import get_settings
 from app.core.exceptions import FileValidationError
@@ -91,7 +92,10 @@ def test_adversarial_zip_slip_traversal_nested_escape(tmp_path: Path) -> None:
     with pytest.raises(FileValidationError) as exc_info:
         safe_extract_zip(malicious_zip, extract_target)
 
-    assert "unsafe path" in exc_info.value.message.lower() or "escapes" in exc_info.value.message.lower()
+    assert (
+        "unsafe path" in exc_info.value.message.lower()
+        or "escapes" in exc_info.value.message.lower()
+    )
 
 
 def test_adversarial_filename_injection_sanitization() -> None:

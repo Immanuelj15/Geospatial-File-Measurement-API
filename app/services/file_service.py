@@ -1,5 +1,5 @@
-from pathlib import Path
 import uuid
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -34,9 +34,7 @@ class FileProcessingService:
             raise EntityNotFoundError(f"File with id '{file_id}' not found.")
 
         # Step 1: Transition status to PROCESSING
-        logger.info(
-            "Starting processing pipeline for file %s (%s)", file_id, file_path.name
-        )
+        logger.info("Starting processing pipeline for file %s (%s)", file_id, file_path.name)
         self.repository.update_file_status(file_id, status=FileStatus.PROCESSING)
 
         try:
@@ -72,17 +70,13 @@ class FileProcessingService:
 
             # Step 6: Compute aggregate metrics
             successful_count = sum(
-                1
-                for r in measurement_results
-                if r.status == FeatureStatus.SUCCESS.value
+                1 for r in measurement_results if r.status == FeatureStatus.SUCCESS.value
             )
             failed_count = sum(
                 1 for r in measurement_results if r.status == FeatureStatus.FAILED.value
             )
             unsupported_count = sum(
-                1
-                for r in measurement_results
-                if r.status == FeatureStatus.UNSUPPORTED.value
+                1 for r in measurement_results if r.status == FeatureStatus.UNSUPPORTED.value
             )
 
             # Step 7: Determine final processing status

@@ -1,6 +1,5 @@
-from pathlib import Path
 import uuid
-from typing import Tuple
+from pathlib import Path
 
 from app.core.config import get_settings
 from app.core.exceptions import FileValidationError
@@ -72,7 +71,7 @@ def determine_file_type(extension: str) -> FileType:
     )
 
 
-def generate_safe_stored_filename(extension: str) -> Tuple[uuid.UUID, str]:
+def generate_safe_stored_filename(extension: str) -> tuple[uuid.UUID, str]:
     """Generate a unique UUID and safe filesystem filename.
 
     Ensures client-provided filenames never touch the local filesystem.

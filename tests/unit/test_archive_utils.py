@@ -1,5 +1,6 @@
-from pathlib import Path
 import zipfile
+from pathlib import Path
+
 import pytest
 
 from app.core.exceptions import FileValidationError

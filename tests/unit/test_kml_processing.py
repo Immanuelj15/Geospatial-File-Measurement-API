@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import pytest
 
 from app.core.exceptions import FileProcessingError
@@ -14,9 +15,7 @@ from tests.fixtures.synthetic_geometries import (
 def test_read_kml_file_mixed_geometries(tmp_path: Path) -> None:
     """Verify reading a KML file containing Point, LineString, and Polygon."""
     kml_path = tmp_path / "survey.kml"
-    create_synthetic_kml(
-        kml_path, include_point=True, include_line=True, include_polygon=True
-    )
+    create_synthetic_kml(kml_path, include_point=True, include_line=True, include_polygon=True)
 
     gdf = read_kml_file(kml_path)
 

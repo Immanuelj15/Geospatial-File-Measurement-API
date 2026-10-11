@@ -1,12 +1,11 @@
 import os
-from pathlib import Path
-from typing import List, Set
 import zipfile
+from pathlib import Path
 
 from app.core.exceptions import FileValidationError
 
-REQUIRED_SHAPEFILE_EXTENSIONS: Set[str] = {".shp", ".shx", ".dbf"}
-RECOMMENDED_SHAPEFILE_EXTENSIONS: Set[str] = {".prj"}
+REQUIRED_SHAPEFILE_EXTENSIONS: set[str] = {".shp", ".shx", ".dbf"}
+RECOMMENDED_SHAPEFILE_EXTENSIONS: set[str] = {".prj"}
 
 
 def safe_extract_zip(zip_path: Path, destination_dir: Path) -> None:
@@ -56,10 +55,8 @@ def inspect_shapefile_components(extracted_dir: Path) -> Path:
     extracted_dir = extracted_dir.resolve()
 
     # Search for all .shp files recursively
-    shp_files: List[Path] = [
-        p
-        for p in extracted_dir.rglob("*")
-        if p.is_file() and p.suffix.lower() == ".shp"
+    shp_files: list[Path] = [
+        p for p in extracted_dir.rglob("*") if p.is_file() and p.suffix.lower() == ".shp"
     ]
 
     if not shp_files:
@@ -75,9 +72,7 @@ def inspect_shapefile_components(extracted_dir: Path) -> Path:
 
     # Check companion files with matching stem
     existing_extensions = {
-        p.suffix.lower()
-        for p in parent_dir.iterdir()
-        if p.stem.lower() == shp_stem.lower()
+        p.suffix.lower() for p in parent_dir.iterdir() if p.stem.lower() == shp_stem.lower()
     }
 
     missing_required = REQUIRED_SHAPEFILE_EXTENSIONS - existing_extensions
@@ -98,9 +93,7 @@ def inspect_shapefile_components(extracted_dir: Path) -> Path:
     return primary_shp
 
 
-def validate_and_extract_shapefile_archive(
-    zip_path: Path, extraction_dir: Path
-) -> Path:
+def validate_and_extract_shapefile_archive(zip_path: Path, extraction_dir: Path) -> Path:
     """Safely extract ZIP archive and return path to validated .shp file."""
     safe_extract_zip(zip_path, extraction_dir)
     return inspect_shapefile_components(extraction_dir)

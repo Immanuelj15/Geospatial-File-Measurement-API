@@ -1,4 +1,5 @@
 import uuid
+
 import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -87,9 +88,7 @@ def test_create_file_with_features_and_cascade_delete(db_session: Session) -> No
     db_session.delete(file_record)
     db_session.commit()
 
-    remaining_features = (
-        db_session.query(FeatureModel).filter_by(file_id=file_record.id).all()
-    )
+    remaining_features = db_session.query(FeatureModel).filter_by(file_id=file_record.id).all()
     assert len(remaining_features) == 0
 
 

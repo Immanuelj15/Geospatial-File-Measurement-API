@@ -1,4 +1,5 @@
-from typing import Generator
+from collections.abc import Generator
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
@@ -8,7 +9,6 @@ from sqlalchemy.pool import StaticPool
 from app.core.config import Settings, get_settings
 from app.db.database import Base, get_db
 from app.main import create_app
-
 
 # In-memory SQLite engine with StaticPool for thread-safe test isolation
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -54,9 +54,7 @@ def db_session() -> Generator[Session, None, None]:
 
 
 @pytest.fixture(scope="function")
-def client(
-    test_settings: Settings, db_session: Session
-) -> Generator[TestClient, None, None]:
+def client(test_settings: Settings, db_session: Session) -> Generator[TestClient, None, None]:
     """Provide FastAPI test client with database and settings overrides."""
     app = create_app()
     app.dependency_overrides[get_settings] = lambda: test_settings

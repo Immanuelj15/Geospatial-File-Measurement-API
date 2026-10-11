@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any
+
 from shapely.geometry.base import BaseGeometry
 
 
@@ -9,9 +10,9 @@ class ExtractedFeature:
 
     feature_index: int
     geometry_type: str
-    geometry: Optional[BaseGeometry]
-    geometry_geojson: Optional[Dict[str, Any]]
-    properties: Dict[str, Any] = field(default_factory=dict)
+    geometry: BaseGeometry | None
+    geometry_geojson: dict[str, Any] | None
+    properties: dict[str, Any] = field(default_factory=dict)
     is_supported_geometry: bool = True
     is_valid_geometry: bool = True
-    error_message: Optional[str] = None
+    error_message: str | None = None

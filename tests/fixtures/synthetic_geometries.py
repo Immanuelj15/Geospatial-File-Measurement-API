@@ -1,7 +1,6 @@
-from pathlib import Path
 import tempfile
-from typing import List
 import zipfile
+from pathlib import Path
 
 import geopandas as gpd
 from shapely.geometry import LineString, Point, Polygon
@@ -14,7 +13,7 @@ def create_synthetic_kml(
     include_polygon: bool = True,
 ) -> Path:
     """Generate a valid synthetic OGC KML 2.2 file for testing."""
-    placemarks: List[str] = []
+    placemarks: list[str] = []
 
     if include_point:
         placemarks.append(

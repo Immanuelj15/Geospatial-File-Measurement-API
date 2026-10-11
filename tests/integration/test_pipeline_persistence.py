@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from sqlalchemy.orm import Session
 
 from app.db.models import FeatureStatus, FileStatus, FileType, MeasurementType
@@ -14,9 +15,7 @@ from tests.fixtures.synthetic_geometries import (
 def test_process_pipeline_kml_success(tmp_path: Path, db_session: Session) -> None:
     """Verify end-to-end processing of a valid KML file with database persistence."""
     kml_path = tmp_path / "survey_test.kml"
-    create_synthetic_kml(
-        kml_path, include_point=True, include_line=True, include_polygon=True
-    )
+    create_synthetic_kml(kml_path, include_point=True, include_line=True, include_polygon=True)
 
     repo = FileRepository(db_session)
     file_record = repo.create_file(
@@ -66,9 +65,7 @@ def test_process_pipeline_kml_success(tmp_path: Path, db_session: Session) -> No
     assert point_feats[0].measurement_unit is None
 
 
-def test_process_pipeline_shapefile_zip_success(
-    tmp_path: Path, db_session: Session
-) -> None:
+def test_process_pipeline_shapefile_zip_success(tmp_path: Path, db_session: Session) -> None:
     """Verify end-to-end processing of a Shapefile ZIP archive."""
     zip_path = tmp_path / "parcels.zip"
     create_synthetic_shapefile_zip(zip_path, geometry_type="Polygon")
@@ -163,9 +160,7 @@ def test_process_pipeline_partial_status(tmp_path: Path, db_session: Session) ->
     assert features[1].status == FeatureStatus.UNSUPPORTED.value
 
 
-def test_process_pipeline_corrupted_file_failed(
-    tmp_path: Path, db_session: Session
-) -> None:
+def test_process_pipeline_corrupted_file_failed(tmp_path: Path, db_session: Session) -> None:
     """Verify FAILED status and error trace when file is corrupt."""
     bad_kml = tmp_path / "corrupt.kml"
     create_malformed_kml(bad_kml)

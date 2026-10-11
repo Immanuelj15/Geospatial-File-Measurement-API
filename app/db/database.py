@@ -1,4 +1,4 @@
-from typing import Generator
+from collections.abc import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
@@ -15,9 +15,7 @@ class Base(DeclarativeBase):
 settings = get_settings()
 
 # Engine creation: supports PostgreSQL in production and SQLite in testing/local fallbacks
-connect_args = (
-    {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
-)
+connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
 engine = create_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG and settings.ENVIRONMENT == "development",

@@ -1,15 +1,15 @@
+import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
-import uuid
+from typing import Any
 
 from sqlalchemy import (
+    JSON,
     BigInteger,
     DateTime,
     Float,
     ForeignKey,
     Integer,
-    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -64,12 +64,10 @@ class FileModel(Base):
         default=uuid.uuid4,
     )
     original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
-    stored_filename: Mapped[str] = mapped_column(
-        String(255), nullable=False, unique=True
-    )
+    stored_filename: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     file_type: Mapped[str] = mapped_column(String(50), nullable=False)
     file_size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    crs: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    crs: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     status: Mapped[str] = mapped_column(
         String(50),
@@ -78,14 +76,10 @@ class FileModel(Base):
         index=True,
     )
     total_features: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    successful_measurements: Mapped[int] = mapped_column(
-        Integer, default=0, nullable=False
-    )
+    successful_measurements: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     failed_measurements: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    unsupported_features: Mapped[int] = mapped_column(
-        Integer, default=0, nullable=False
-    )
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    unsupported_features: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -101,7 +95,7 @@ class FileModel(Base):
     )
 
     # Relationships
-    features: Mapped[List["FeatureModel"]] = relationship(
+    features: Mapped[list["FeatureModel"]] = relationship(
         "FeatureModel",
         back_populates="file",
         cascade="all, delete-orphan",
@@ -127,21 +121,19 @@ class FeatureModel(Base):
     )
     feature_index: Mapped[int] = mapped_column(Integer, nullable=False)
     geometry_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    geometry_geojson: Mapped[Optional[Dict[str, Any]]] = mapped_column(
-        JSON, nullable=True
-    )
-    properties: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    geometry_geojson: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    properties: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
-    measurement_type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    measurement_value: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    measurement_unit: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    measurement_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    measurement_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    measurement_unit: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default=FeatureStatus.SUCCESS.value,
     )
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -152,6 +144,4 @@ class FeatureModel(Base):
     # Relationships
     file: Mapped["FileModel"] = relationship("FileModel", back_populates="features")
 
-    __table_args__ = (
-        UniqueConstraint("file_id", "feature_index", name="uq_file_feature_index"),
-    )
+    __table_args__ = (UniqueConstraint("file_id", "feature_index", name="uq_file_feature_index"),)

@@ -7,9 +7,7 @@ from app.services.measurement_service import measure_dataset, measure_feature
 
 def test_measure_polygon_area_exact() -> None:
     """Verify exact planar area computation for a known 100m x 100m square polygon."""
-    square_poly = Polygon(
-        [(0.0, 0.0), (100.0, 0.0), (100.0, 100.0), (0.0, 100.0), (0.0, 0.0)]
-    )
+    square_poly = Polygon([(0.0, 0.0), (100.0, 0.0), (100.0, 100.0), (0.0, 100.0), (0.0, 0.0)])
     feature = ExtractedFeature(
         feature_index=0,
         geometry_type="Polygon",
@@ -89,9 +87,7 @@ def test_measure_3d_coordinates_z_axis_handling() -> None:
 
 def test_measure_multipolygon_area() -> None:
     """Verify area calculation on multi-part polygons."""
-    poly1 = Polygon(
-        [(0.0, 0.0), (50.0, 0.0), (50.0, 50.0), (0.0, 50.0), (0.0, 0.0)]
-    )  # 2500 m2
+    poly1 = Polygon([(0.0, 0.0), (50.0, 0.0), (50.0, 50.0), (0.0, 50.0), (0.0, 0.0)])  # 2500 m2
     poly2 = Polygon(
         [(100.0, 100.0), (150.0, 100.0), (150.0, 150.0), (100.0, 150.0), (100.0, 100.0)]
     )  # 2500 m2
@@ -213,9 +209,7 @@ def test_measure_invalid_geometry() -> None:
 
 def test_measure_dataset_batch() -> None:
     """Verify batch measurement processing across mixed geometries."""
-    poly = Polygon(
-        [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0), (0.0, 0.0)]
-    )  # 100 m2
+    poly = Polygon([(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0), (0.0, 0.0)])  # 100 m2
     line = LineString([(0.0, 0.0), (25.0, 0.0)])  # 25 m
     point = Point(10.0, 10.0)
 

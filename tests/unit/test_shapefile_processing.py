@@ -1,5 +1,6 @@
-from pathlib import Path
 import zipfile
+from pathlib import Path
+
 import pytest
 
 from app.core.exceptions import FileProcessingError, FileValidationError
@@ -31,9 +32,7 @@ def test_read_shapefile_zip_polygon(tmp_path: Path) -> None:
 def test_read_shapefile_zip_linestring(tmp_path: Path) -> None:
     """Verify reading a Shapefile ZIP archive containing LineStrings."""
     zip_path = tmp_path / "routes.zip"
-    create_synthetic_shapefile_zip(
-        zip_path, geometry_type="LineString", crs="EPSG:4326"
-    )
+    create_synthetic_shapefile_zip(zip_path, geometry_type="LineString", crs="EPSG:4326")
 
     gdf = read_shapefile_zip(zip_path)
 
@@ -87,9 +86,7 @@ def test_read_shapefile_zip_missing_components(tmp_path: Path) -> None:
 def test_read_geospatial_file_dispatcher(tmp_path: Path) -> None:
     """Verify unified dispatcher routes both KML and Shapefile ZIP accurately."""
     kml_path = tmp_path / "sample.kml"
-    create_synthetic_kml(
-        kml_path, include_point=True, include_line=False, include_polygon=False
-    )
+    create_synthetic_kml(kml_path, include_point=True, include_line=False, include_polygon=False)
 
     shp_zip_path = tmp_path / "sample.zip"
     create_synthetic_shapefile_zip(shp_zip_path, geometry_type="Point")
