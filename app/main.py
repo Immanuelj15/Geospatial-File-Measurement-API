@@ -2,8 +2,10 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.routes import files, health
 from app.core.config import get_settings
@@ -41,11 +43,22 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Security Headers Middleware
+    @app.middleware("http")
+    async def security_headers_middleware(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
     # CORS configuration
+    is_wildcard = settings.CORS_ORIGINS == ["*"]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=not is_wildcard,
         allow_methods=["*"],
         allow_headers=["*"],
     )
@@ -55,6 +68,34 @@ def create_app() -> FastAPI:
     app.include_router(files.router, prefix=settings.API_V1_PREFIX)
 
     # Exception Handlers
+    @app.exception_handler(RequestValidationError)
+    async def request_validation_exception_handler(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
+        logger.warning("Request schema validation failed: %s", exc.errors())
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={
+                "error": "ValidationError",
+                "message": "The request contained invalid parameters or payload.",
+                "details": exc.errors(),
+            },
+        )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def starlette_http_exception_handler(
+        request: Request, exc: StarletteHTTPException
+    ) -> JSONResponse:
+        logger.info("HTTP exception %d: %s", exc.status_code, exc.detail)
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "error": f"HTTP_{exc.status_code}",
+                "message": str(exc.detail),
+                "details": {},
+            },
+        )
+
     @app.exception_handler(FileValidationError)
     async def file_validation_exception_handler(
         request: Request, exc: FileValidationError
@@ -92,7 +133,11 @@ def create_app() -> FastAPI:
         logger.error("Application domain error: %s", exc.message, exc_info=True)
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"error": "InternalApplicationError", "message": exc.message},
+            content={
+                "error": "InternalApplicationError",
+                "message": exc.message,
+                "details": exc.details,
+            },
         )
 
     @app.exception_handler(Exception)

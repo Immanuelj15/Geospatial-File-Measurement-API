@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # Server configuration
     HOST: str = Field(default="0.0.0.0")
     PORT: int = Field(default=8000)
+    CORS_ORIGINS: list[str] = Field(default=["*"])
 
     # Database configuration
     DATABASE_URL: str = Field(
